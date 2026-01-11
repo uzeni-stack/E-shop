@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Chytrý Admin - E-shop</title>
+    <title>Master Admin - E-shop</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="config.js"></script>
@@ -14,12 +14,12 @@
         label { display: block; margin: 10px 0 5px; font-weight: bold; color: #555; }
         input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .btn-add { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; }
-        #photoPicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin: 10px 0; max-height: 250px; overflow-y: auto; background: #f9f9f9; padding: 15px; border: 2px dashed #ccc; border-radius: 8px; }
+        #photoPicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin: 10px 0; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 15px; border: 2px dashed #ccc; border-radius: 8px; min-height: 100px; }
         .folder-btn { background: #3498db; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
         #photoPicker img { width: 100%; height: 75px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 3px solid transparent; background: white; }
-        #photoPicker img.selected { border-color: #2ecc71; }
+        #photoPicker img.selected { border-color: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.5); }
         .product-item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
-        .product-item img { width: 50px; height: 50px; object-fit: cover; }
+        .product-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
         .btn-del { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
@@ -42,7 +42,7 @@
         <textarea id="prodDesc" placeholder="Popis..."></textarea>
         <label>Fotky (klikni na složku nebo náhled):</label>
         <input type="text" id="prodPhotos" readonly>
-        <div id="photoPicker">Načítám...</div>
+        <div id="photoPicker">Připojuji se k zabezpečenému úložišti...</div>
         <button class="btn-add" onclick="ulozProdukt()">🚀 Vystavit</button>
     </div>
 
@@ -53,21 +53,33 @@
 </div>
 
 <script>
-    // --- MASKOVANÝ TOKEN (GitHub ho takhle neuvidí) ---
-    const p1 = "ghp_3oIp49FuE9y2In";
-    const p2 = "MXdcdG8se4q4xuKi0byl7N";
-    const GITHUB_TOKEN = p1 + p2; 
-    
     const GITHUB_USER = 'uzeni-stack';
     const GITHUB_REPO = 'uzeni-stack.github.io';
-    
     let vybraneCesty = [];
 
-    async function nactiZGithubu(cesta = '') {
-        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${cesta}`;
+    // 1. KROK: Načtení tokenu z Firebase (aby nebyl v kódu)
+    db.ref('nastaveni/github_token').on('value', snap => {
+        const token = snap.val();
+        if (token) {
+            nactiZGithubu('', token);
+        } else {
+            document.getElementById('photoPicker').innerHTML = "<b style='color:red;'>Token nenalezen!</b><br>Vlož ho v konzoli přes db.ref('nastaveni').set(...)";
+        }
+    });
+
+    // 2. KROK: Funkce pro načítání fotek z GitHubu
+    async function nactiZGithubu(cesta, token) {
         const picker = document.getElementById('photoPicker');
         try {
-            const res = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${cesta}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            
+            if (res.status === 401) {
+                picker.innerHTML = "<b style='color:red;'>Token je neplatný!</b> Vygeneruj nový.";
+                return;
+            }
+
             const items = await res.json();
             picker.innerHTML = "";
 
@@ -75,7 +87,7 @@
                 const zpet = document.createElement('button');
                 zpet.className = "folder-btn";
                 zpet.innerHTML = "🔙<span>Zpět</span>";
-                zpet.onclick = () => nactiZGithubu('');
+                zpet.onclick = () => nactiZGithubu('', token);
                 picker.appendChild(zpet);
             }
 
@@ -84,20 +96,18 @@
                     const btn = document.createElement('button');
                     btn.className = "folder-btn";
                     btn.innerHTML = "📁<span>" + item.name + "</span>";
-                    btn.onclick = () => nactiZGithubu(item.path);
+                    btn.onclick = () => nactiZGithubu(item.path, token);
                     picker.appendChild(btn);
                 } else if (item.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
                     const img = document.createElement('img');
                     img.src = item.download_url;
                     img.onclick = () => {
                         if(!vybraneCesty.includes(item.path)) {
-                            vybraneCesty.push(item.path);
+                            vybraneCesty = [item.path]; // Vybere jednu hlavní fotku
+                            document.querySelectorAll('#photoPicker img').forEach(i => i.classList.remove('selected'));
                             img.classList.add('selected');
-                        } else {
-                            vybraneCesty = vybraneCesty.filter(x => x !== item.path);
-                            img.classList.remove('selected');
                         }
-                        document.getElementById('prodPhotos').value = vybraneCesty.join(', ');
+                        document.getElementById('prodPhotos').value = item.path;
                     };
                     picker.appendChild(img);
                 }
@@ -105,6 +115,7 @@
         } catch (e) { picker.innerHTML = "Chyba načítání."; }
     }
 
+    // 3. KROK: Uložení produktu do Firebase
     function ulozProdukt() {
         const name = document.getElementById('prodName').value;
         if(!name || vybraneCesty.length === 0) return alert("Chybí název nebo fotka!");
@@ -116,9 +127,13 @@
             popis: document.getElementById('prodDesc').value,
             img: vybraneCesty[0],
             galerie: vybraneCesty
-        }).then(() => location.reload());
+        }).then(() => {
+            alert("Produkt byl úspěšně vystaven!");
+            location.reload();
+        });
     }
 
+    // 4. KROK: Zobrazení seznamu produktů
     db.ref('produkty').on('value', snap => {
         const list = document.getElementById('manager-list');
         list.innerHTML = "";
@@ -134,8 +149,6 @@
             });
         }
     });
-
-    nactiZGithubu('');
 </script>
 </body>
 </html>
