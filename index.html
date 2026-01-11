@@ -3,107 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Můj E-shop se svetry</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Vlněné svetry - E-shop</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="config.js"></script>
+    
+    <style>
+        /* RESET A ZÁKLAD */
+        body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        
+        /* HLAVIČKA S KOŠÍKEM */
+        header { 
+            background: #333; color: white; padding: 15px 5%; 
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .cart-status { background: #e74c3c; padding: 5px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+
+        /* HLAVNÍ MŘÍŽKA (LAYOUT) */
+        .shop-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* To dává ty karty vedle sebe */
+            gap: 30px; 
+            padding: 40px 5%; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* KARTA PRODUKTU */
+        .product-card { 
+            background: white; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            transition: 0.3s;
+        }
+        .product-card:hover { transform: translateY(-5px); }
+
+        /* FOTKA V KARTĚ */
+        .img-wrapper { 
+            width: 100%; height: 200px; background: white; 
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid #eee;
+        }
+        .img-wrapper img { 
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; /* Fotka se nezdeformuje, prostě se do čtverce vejde */
+        }
+
+        /* TEXTY V KARTĚ */
+        .product-info { padding: 20px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        h3 { margin: 0 0 10px; font-size: 1.1rem; color: #222; }
+        .price-tag { font-size: 1.3rem; font-weight: bold; color: #2ecc71; margin-bottom: 15px; }
+
+        .buy-button { 
+            background: #2ecc71; color: white; border: none; padding: 12px; 
+            border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;
+        }
+        .buy-button:hover { background: #27ae60; }
+    </style>
 </head>
 <body>
+
     <header>
-        <h1>Vlněné svetry</h1>
+        <h1 style="margin:0; font-size: 1.5rem;">🧶 Svetry od Františka</h1>
+        <div class="cart-status" onclick="alert('Košík se připravuje!')">
+            🛒 Košík: <span id="cart-count">0</span> ks
+        </div>
     </header>
 
     <main id="product-list" class="shop-container">
         </main>
 
     <script>
-        const productList = document.getElementById('product-list');
+        let counter = 0;
+        const list = document.getElementById('product-list');
 
-        // Načítání dat z Firebase v reálném čase
+        function addToCart() {
+            counter++;
+            document.getElementById('cart-count').innerText = counter;
+        }
+
+        // NAČÍTÁNÍ Z FIREBASE
         db.ref('produkty').on('value', (snapshot) => {
             const data = snapshot.val();
-            productList.innerHTML = ""; 
+            list.innerHTML = ""; 
 
             if (data) {
-                Object.keys(data).forEach(key => {
-                    const produkt = data[key];
-                    
-                    // Kód pro vykreslení karty produktu
-                    productList.innerHTML += `
+                Object.keys(data).forEach(id => {
+                    const item = data[id];
+                    list.innerHTML += `
                         <div class="product-card">
-                            <div class="img-container">
-                                <img src="${produkt.img}" alt="${produkt.jmeno}">
+                            <div class="img-wrapper">
+                                <img src="${item.img}" alt="${item.jmeno}">
                             </div>
-                            <h3>${produkt.jmeno}</h3>
-                            <p class="price">${produkt.cena} Kč</p>
-                            <button class="buy-btn">Koupit</button>
+                            <div class="product-info">
+                                <h3>${item.jmeno}</h3>
+                                <div class="price-tag">${item.cena} Kč</div>
+                                <button class="buy-button" onclick="addToCart()">Do košíku</button>
+                            </div>
                         </div>
                     `;
                 });
             } else {
-                productList.innerHTML = "<p>E-shop je zatím prázdný.</p>";
+                list.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>V obchodě zatím nic není.</p>";
             }
         });
     </script>
 
-    <style>
-        /* Moderní vzhled e-shopu */
-        body { font-family: sans-serif; background-color: #f9f9f9; margin: 0; }
-        header { background: #333; color: white; text-align: center; padding: 20px 0; }
-        
-        .shop-container { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 25px; 
-            justify-content: center; 
-            padding: 40px; 
-        }
-
-        .product-card { 
-            background: white;
-            border: 1px solid #ddd; 
-            padding: 15px; 
-            border-radius: 12px; 
-            text-align: center; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-            width: 260px;
-            transition: transform 0.2s;
-        }
-
-        .product-card:hover { transform: translateY(-5px); }
-
-        /* Zarovnání fotek, aby byly všechny stejně velké */
-        .img-container {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background: #eee;
-        }
-
-        .img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Ořízne fotku tak, aby vyplnila prostor a nedeformovala se */
-        }
-
-        h3 { font-size: 1.1em; color: #444; margin: 10px 0; }
-        .price { font-weight: bold; color: #e44d26; font-size: 1.3em; margin: 10px 0; }
-        
-        .buy-btn { 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            width: 100%; 
-            font-weight: bold;
-            font-size: 1em;
-        }
-        .buy-btn:hover { background: #218838; }
-    </style>
 </body>
 </html>
