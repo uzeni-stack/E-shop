@@ -2,57 +2,156 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - E-shop Svetry</title>
+    <title>Master Admin - E-shop</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="config.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1, h2 { text-align: center; color: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
-        /* Formulář */
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        
-        /* Galerie pro výběr */
-        .gallery-picker { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
-            gap: 10px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 10px;
-        }
-        .gallery-picker img { width: 100%; height: 80px; object-fit: cover; cursor: pointer; border-radius: 5px; border: 3px solid transparent; }
-        .gallery-picker img.selected { border-color: #2ecc71; }
+        label { display: block; margin: 10px 0 5px; font-weight: bold; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 80px; resize: vertical; }
 
-        .btn-save { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; }
-        
-        /* Seznam pro mazání */
-        .product-list { margin-top: 40px; border-top: 2px solid #eee; padding-top: 20px; }
-        .product-item { 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 15px; border-bottom: 1px solid #eee; background: #fff; transition: 0.2s;
-        }
-        .product-item:hover { background: #f9f9f9; }
-        .product-info { display: flex; align-items: center; }
-        .product-info img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; margin-right: 15px; }
-        
-        .btn-delete { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-add { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: 0.3s; }
+        .btn-add:hover { background: #27ae60; }
+
+        /* Galerie výběr */
+        .picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; margin: 10px 0; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #eee; }
+        .picker img { width: 100%; height: 60px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 2px solid transparent; }
+        .picker img.selected { border-color: #2ecc71; }
+
+        /* Seznam produktů pro správu */
+        .item-list { max-height: 800px; overflow-y: auto; }
+        .product-item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .product-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .btn-del { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🛒 Nový produkt</h1>
-    
-    <div class="form-group">
-        <label>Název svetru:</label>
-        <input type="text" id="name" placeholder="Např. Ručně pletený modrý svetr">
-    </div>
+    <div class="box">
+        <h2>➕ Nový Produkt</h2>
+        
+        <label>Hlavní Kategorie (např. Svetry):</label>
+        <input type="text" id="mainCat" placeholder="Svetry">
 
-    <div class="form-group">
+        <label>Podkategorie (např. Rolák):</label>
+        <input type="text" id="subCat" placeholder="Rolák">
+
+        <label>Název zboží:</label>
+        <input type="text" id="prodName" placeholder="Modrý vlněný rolák">
+
+        <label>Popis zboží:</label>
+        <textarea id="prodDesc" placeholder="Tento svetr je vyroben z..."></textarea>
+
         <label>Cena (Kč):</label>
-        <input type="number" id="price" placeholder="1500">
+        <input type="number" id="prodPrice" placeholder="1290">
+
+        <label>Cesty k fotkám (vyber klikem nebo vypiš čárkou):</label>
+        <input type="text" id="prodPhotos" placeholder="fotky/fotky/01.png">
+        
+        <div class="picker" id="photoPicker"></div>
+        <p style="font-size: 11px; color: #888;">* První vybraná fotka bude hlavní náhledová.</p>
+
+        <button class="btn-add" onclick="ulozProdukt()">🚀 Vystavit do obchodu</button>
     </div>
 
-    <label>Vyber fotky (klikni na jednu nebo víc):</label>
-    <div class="gallery-picker
+    <div class="box">
+        <h2>📦 Aktuální Nabídka</h2>
+        <div id="manager-list" class="item-list">Načítám...</div>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURACE FOTEK ---
+    const dostupneSoubory = ['01.png', '02.png', '03.png', '04.png', '05.png']; // Tady doplň své názvy
+    const slozka = "fotky/fotky/";
+    let vybrane = [];
+
+    // Vygenerování klikací galerie
+    const picker = document.getElementById('photoPicker');
+    dostupneSoubory.forEach(f => {
+        const img = document.createElement('img');
+        img.src = slozka + f;
+        img.onclick = () => {
+            const cesta = slozka + f;
+            if(!vybrane.includes(cesta)) {
+                vybrane.push(cesta);
+                img.classList.add('selected');
+            } else {
+                vybrane = vybrane.filter(x => x !== cesta);
+                img.classList.remove('selected');
+            }
+            document.getElementById('prodPhotos').value = vybrane.join(', ');
+        };
+        picker.appendChild(img);
+    });
+
+    // --- FUNKCE UKLÁDÁNÍ ---
+    function ulozProdukt() {
+        const cat = document.getElementById('mainCat').value.trim();
+        const sub = document.getElementById('subCat').value.trim();
+        const name = document.getElementById('prodName').value.trim();
+        const desc = document.getElementById('prodDesc').value.trim();
+        const price = document.getElementById('prodPrice').value.trim();
+        const photos = document.getElementById('prodPhotos').value.split(',').map(s => s.trim());
+
+        if(!cat || !sub || !name || !price || !photos[0]) {
+            alert("Prosím vyplň všechna pole!");
+            return;
+        }
+
+        // Ukládáme do struktury: produkty / id
+        db.ref('produkty').push({
+            kategorie: cat,
+            podkategorie: sub,
+            jmeno: name,
+            popis: desc,
+            cena: price,
+            img: photos[0],
+            galerie: photos
+        }).then(() => {
+            alert("Svetr úspěšně přidán!");
+            location.reload();
+        });
+    }
+
+    // --- NAČÍTÁNÍ A MAZÁNÍ ---
+    const manager = document.getElementById('manager-list');
+    db.ref('produkty').on('value', (snap) => {
+        const data = snap.val();
+        manager.innerHTML = "";
+        if(data) {
+            Object.keys(data).forEach(id => {
+                const p = data[id];
+                manager.innerHTML += `
+                    <div class="product-item">
+                        <img src="${p.img}">
+                        <div style="flex:1; margin-left:10px;">
+                            <div style="font-size:11px; color:gray;">${p.kategorie} > ${p.podkategorie}</div>
+                            <div style="font-weight:bold;">${p.jmeno}</div>
+                            <div>${p.cena} Kč</div>
+                        </div>
+                        <button class="btn-del" onclick="smazat('${id}')">🗑️</button>
+                    </div>
+                `;
+            });
+        } else {
+            manager.innerHTML = "Obchod je prázdný.";
+        }
+    });
+
+    function smazat(id) {
+        if(confirm("Opravdu smazat tento produkt?")) {
+            db.ref('produkty/' + id).remove();
+        }
+    }
+</script>
+
+</body>
+</html>
