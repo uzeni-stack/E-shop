@@ -1,61 +1,136 @@
-<div id="cart-modal" style="display:none; position:fixed; top:0; right:0; width:300px; height:100%; background:white; z-index:3000; box-shadow:-5px 0 15px rgba(0,0,0,0.2); padding:20px; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧶 Svetry od Františka</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        header { background: #333; color: white; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        
+        /* Mřížka produktů */
+        .shop-container { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 25px; padding: 40px 5%; max-width: 1200px; margin: 0 auto; 
+        }
+
+        .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        
+        .img-wrapper { width: 100%; height: 250px; cursor: zoom-in; background: #fff; display: flex; align-items: center; justify-content: center; }
+        .img-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .info { padding: 20px; text-align: center; }
+        .price { font-size: 1.4rem; color: #27ae60; font-weight: bold; margin: 10px 0; }
+        .buy-btn { background: #2ecc71; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
+
+        /* MODAL (Zvětšení fotky) */
+        .modal { display: none; position: fixed; z-index: 2000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; }
+        .modal-img { max-width: 80%; max-height: 60vh; border: 2px solid white; }
+        .mini-gal { display: flex; gap: 10px; margin-top: 20px; }
+        .mini-gal img { width: 60px; height: 60px; object-fit: cover; cursor: pointer; border: 1px solid #fff; }
+
+        /* KOŠÍK PANEL */
+        #cart-panel { display: none; position: fixed; top: 0; right: 0; width: 300px; height: 100%; background: white; z-index: 3000; box-shadow: -5px 0 15px rgba(0,0,0,0.2); padding: 20px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🧶 Františkův E-shop</h1>
+    <div onclick="document.getElementById('cart-panel').style.display='block'" style="cursor:pointer; font-weight:bold;">
+        🛒 Košík: <span id="cart-count">0</span>
+    </div>
+</header>
+
+<main id="product-list" class="shop-container">
+    <p style="text-align:center; grid-column: 1/-1;">Načítám svetry z databáze...</p>
+</main>
+
+<div id="galleryModal" class="modal" onclick="this.style.display='none'">
+    <img id="bigImg" class="modal-img">
+    <div id="miniGal" class="mini-gal"></div>
+</div>
+
+<div id="cart-panel">
+    <div style="display:flex; justify-content:space-between;">
         <h2>Váš košík</h2>
-        <span onclick="document.getElementById('cart-modal').style.display='none'" style="cursor:pointer; font-size:25px;">&times;</span>
+        <button onclick="document.getElementById('cart-panel').style.display='none'">Zavřít</button>
     </div>
-    <div id="cart-items-list">
-        </div>
+    <div id="cart-items"></div>
     <hr>
-    <div style="font-weight:bold; font-size:1.2em; margin-top:10px;">
-        Celkem: <span id="total-price">0</span> Kč
-    </div>
-    <button onclick="objednat()" style="width:100%; background:#27ae60; color:white; border:none; padding:15px; margin-top:20px; border-radius:5px; cursor:pointer; font-weight:bold;">Odeslat objednávku</button>
-    <button onclick="vyprazdnitKosik()" style="width:100%; background:#ccc; border:none; padding:10px; margin-top:10px; border-radius:5px; cursor:pointer;">Vysypat košík</button>
+    <p>Celkem: <strong id="cart-total">0</strong> Kč</p>
+    <button onclick="alert('Objednávka odeslána!')" style="width:100%; padding:10px; background:#27ae60; color:white; border:none; cursor:pointer;">Objednat</button>
 </div>
 
 <script>
-    let kosikData = [];
+    let kosik = [];
 
-    // Tato funkce nahradí tu původní addToCart/doKosiku
-    function doKosiku(jmeno, cena) {
-        kosikData.push({ jmeno, cena: parseInt(cena) });
-        aktualizujKosik();
-    }
-
-    function aktualizujKosik() {
-        // Aktualizace čísla v liště
-        document.getElementById('cart-count').innerText = kosikData.length;
-        
-        // Aktualizace seznamu v panelu
-        const list = document.getElementById('cart-items-list');
-        let total = 0;
-        list.innerHTML = "";
-        
-        kosikData.forEach((item, index) => {
-            total += item.cena;
-            list.innerHTML += `
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                    <span>${item.jmeno}</span>
-                    <span>${item.cena} Kč</span>
-                </div>
-            `;
+    // Funkce pro galerii
+    function ukazGalerii(vsechnyFotky) {
+        let fotky = Array.isArray(vsechnyFotky) ? vsechnyFotky : [vsechnyFotky];
+        document.getElementById('galleryModal').style.display = 'flex';
+        document.getElementById('bigImg').src = fotky[0];
+        const mini = document.getElementById('miniGal');
+        mini.innerHTML = "";
+        fotky.forEach(f => {
+            const img = document.createElement('img');
+            img.src = f;
+            img.onclick = (e) => { e.stopPropagation(); document.getElementById('bigImg').src = f; };
+            mini.appendChild(img);
         });
-        
-        document.getElementById('total-price').innerText = total;
     }
 
-    function vyprazdnitKosik() {
-        kosikData = [];
-        aktualizujKosik();
-        document.getElementById('cart-modal').style.display = 'none';
+    // Funkce pro košík
+    function pridejDoKosiku(jmeno, cena) {
+        kosik.push({jmeno, cena: parseInt(cena)});
+        document.getElementById('cart-count').innerText = kosik.length;
+        vykresliKosik();
     }
 
-    function objednat() {
-        if(kosikData.length === 0) return alert("Košík je prázdný!");
-        alert("Děkujeme! Objednávka na " + document.getElementById('total-price').innerText + " Kč byla přijata. (Zatím jen testovací režim)");
-        vyprazdnitKosik();
+    function vykresliKosik() {
+        const div = document.getElementById('cart-items');
+        let suma = 0;
+        div.innerHTML = "";
+        kosik.forEach(item => {
+            suma += item.cena;
+            div.innerHTML += `<p>${item.jmeno} - ${item.cena} Kč</p>`;
+        });
+        document.getElementById('cart-total').innerText = suma;
     }
 
-    // Funkce pro otevření košíku (přiřaď ji k ikonce košíku v headeru)
-    // Uprav v headeru: <div class="cart-status" onclick="document.getElementById('cart-modal').style.display='block'">
+    // NAČÍTÁNÍ Z FIREBASE
+    db.ref('produkty').on('value', (snap) => {
+        const data = snap.val();
+        const list = document.getElementById('product-list');
+        list.innerHTML = "";
+        if(data) {
+            Object.keys(data).forEach(id => {
+                const p = data[id];
+                const fotka = Array.isArray(p.img) ? p.img[0] : p.img;
+                const galerie = p.galerie || [p.img];
+
+                list.innerHTML += `
+                    <div class="product-card">
+                        <div class="img-wrapper" onclick='ukazGalerii(${JSON.stringify(galerie)})'>
+                            <img src="${fotka}">
+                        </div>
+                        <div class="info">
+                            <h3>${p.jmeno}</h3>
+                            <div class="price">${p.cena} Kč</div>
+                            <button class="buy-btn" onclick="pridejDoKosiku('${p.jmeno}', '${p.cena}')">Do košíku</button>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            list.innerHTML = "<p>Zatím žádné zboží v nabídce.</p>";
+        }
+    });
 </script>
+
+</body>
+</html>
