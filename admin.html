@@ -1,63 +1,58 @@
-<hr style="margin: 40px 0;">
-<h2>Správa nahraných svetrů</h2>
-<div id="seznam-mazani">
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - E-shop Svetry</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="config.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1, h2 { text-align: center; color: #1a1a1a; }
+        
+        /* Formulář */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Galerie pro výběr */
+        .gallery-picker { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+            gap: 10px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 10px;
+        }
+        .gallery-picker img { width: 100%; height: 80px; object-fit: cover; cursor: pointer; border-radius: 5px; border: 3px solid transparent; }
+        .gallery-picker img.selected { border-color: #2ecc71; }
+
+        .btn-save { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; }
+        
+        /* Seznam pro mazání */
+        .product-list { margin-top: 40px; border-top: 2px solid #eee; padding-top: 20px; }
+        .product-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 15px; border-bottom: 1px solid #eee; background: #fff; transition: 0.2s;
+        }
+        .product-item:hover { background: #f9f9f9; }
+        .product-info { display: flex; align-items: center; }
+        .product-info img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; margin-right: 15px; }
+        
+        .btn-delete { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 Nový produkt</h1>
+    
+    <div class="form-group">
+        <label>Název svetru:</label>
+        <input type="text" id="name" placeholder="Např. Ručně pletený modrý svetr">
     </div>
 
-<style>
-    .delete-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: white;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-    }
-    .btn-delete {
-        background: #ff4d4d;
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    .btn-delete:hover { background: #cc0000; }
-</style>
+    <div class="form-group">
+        <label>Cena (Kč):</label>
+        <input type="number" id="price" placeholder="1500">
+    </div>
 
-<script>
-    // TENTO KÓD PŘIDEJ DO SVÉHO <script> SEKCE
-    const seznamMazani = document.getElementById('seznam-mazani');
-
-    // Načítání produktů pro smazání
-    db.ref('produkty').on('value', (snapshot) => {
-        const data = snapshot.val();
-        seznamMazani.innerHTML = "";
-
-        if (data) {
-            Object.keys(data).forEach(id => {
-                const p = data[id];
-                seznamMazani.innerHTML += `
-                    <div class="delete-item">
-                        <div style="display:flex; align-items:center;">
-                            <img src="${Array.isArray(p.img) ? p.img[0] : p.img}" style="width:50px; height:50px; object-fit:cover; margin-right:15px; border-radius:4px;">
-                            <span><strong>${p.jmeno}</strong> - ${p.cena} Kč</span>
-                        </div>
-                        <button class="btn-delete" onclick="smazatProdukt('${id}')">Smazat</button>
-                    </div>
-                `;
-            });
-        } else {
-            seznamMazani.innerHTML = "<p>Žádné produkty k zobrazení.</p>";
-        }
-    });
-
-    // Funkce pro smazání
-    function smazatProdukt(id) {
-        if (confirm("Opravdu chceš tento svetr smazat z obchodu?")) {
-            db.ref('produkty/' + id).remove()
-                .then(() => alert("Smazáno!"))
-                .catch(err => alert("Chyba: " + err.message));
-        }
-    }
-</script>
+    <label>Vyber fotky (klikni na jednu nebo víc):</label>
+    <div class="gallery-picker
