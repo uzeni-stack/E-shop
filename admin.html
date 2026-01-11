@@ -2,99 +2,79 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Správa e-shopu</title>
-    <link rel="stylesheet" href="style.css">
-    
+    <title>Admin - Přidat svetr</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <script src="config.js"></script>
 </head>
-<body>
+<body style="font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 50px;">
 
-<div class="admin-container">
-    <h1>Přidat nový svetr</h1>
-    
-    <div class="form-group">
-        <label>Název produktu:</label>
-        <input type="text" id="name" placeholder="Např. Ručně pletený modrý svetr">
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+        <h1 style="text-align: center; color: #333;">Nový produkt</h1>
         
+        <label>Název svetru:</label>
+        <input type="text" id="name" placeholder="Např. Modrý vlněný svetr" style="width: 100%; padding: 10px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+
         <label>Cena (Kč):</label>
-        <input type="number" id="price" placeholder="Např. 1200">
-        
-        <label>Odkaz na fotku (z ImgBB):</label>
-        <input type="text" id="imgUrl" placeholder="https://i.ibb.co/...">
-        <p style="font-size: 0.8em; color: #666;">
-            Svoji fotku nahraj na <a href="https://imgbb.com/" target="_blank">ImgBB.com</a>, 
-            pak zvol "Přímý odkaz" a vlož ho sem.
+        <input type="number" id="price" placeholder="1200" style="width: 100%; padding: 10px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+
+        <label>Cesta k fotce na GitHubu:</label>
+        <input type="text" id="photoPath" placeholder="fotky/svetr1.jpg" style="width: 100%; padding: 10px; margin: 10px 0 5px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+        <p style="font-size: 0.8em; color: #666; margin-bottom: 20px;">
+            Důležité: Musí to začínat <b>fotky/</b> a pak název souboru.
         </p>
+
+        <button onclick="ulozDoDatabaze()" id="saveBtn" style="width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1.1em;">
+            🚀 Uložit na e-shop
+        </button>
+
+        <div id="status" style="margin-top: 20px; text-align: center; font-weight: bold;"></div>
         
-        <button onclick="saveToFirebase()" id="saveBtn">🚀 Uložit produkt na web</button>
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+        <a href="index.html" style="display: block; text-align: center; color: #666; text-decoration: none;">← Zpět na web</a>
     </div>
 
-    <div id="status" style="margin-top: 20px; padding: 10px; border-radius: 5px;"></div>
-    
-    <hr>
-    <a href="index.html">⬅ Zpět na hlavní stránku e-shopu</a>
-</div>
+    <script>
+        function ulozDoDatabaze() {
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const photo = document.getElementById('photoPath').value;
+            const status = document.getElementById('status');
+            const btn = document.getElementById('saveBtn');
 
-<script>
-    function saveToFirebase() {
-        const name = document.getElementById('name').value;
-        const price = document.getElementById('price').value;
-        const imgUrl = document.getElementById('imgUrl').value;
-        const statusDiv = document.getElementById('status');
-        const btn = document.getElementById('saveBtn');
+            if (!name || !price || !photo) {
+                status.style.color = "red";
+                status.innerText = "❌ Vyplň prosím všechna pole!";
+                return;
+            }
 
-        // Kontrola, zda je vše vyplněno
-        if (!name || !price || !imgUrl) {
-            statusDiv.style.backgroundColor = "#ffcccc";
-            statusDiv.innerText = "❌ Musíš vyplnit všechna pole!";
-            return;
+            btn.disabled = true;
+            status.style.color = "orange";
+            status.innerText = "⏳ Ukládám...";
+
+            // Uložení do Firebase Realtime Database
+            db.ref('produkty').push({
+                jmeno: name,
+                cena: price,
+                img: photo // Tady se uloží text např. "fotky/svetr.jpg"
+            })
+            .then(() => {
+                status.style.color = "green";
+                status.innerText = "✅ Svetr byl úspěšně přidán!";
+                
+                // Vymazání polí pro další vložení
+                document.getElementById('name').value = "";
+                document.getElementById('price').value = "";
+                document.getElementById('photoPath').value = "";
+                btn.disabled = false;
+            })
+            .catch((error) => {
+                status.style.color = "red";
+                status.innerText = "❌ Chyba: " + error.message;
+                btn.disabled = false;
+            });
         }
-
-        // Deaktivace tlačítka během ukládání
-        btn.disabled = true;
-        statusDiv.style.backgroundColor = "#e1f5fe";
-        statusDiv.innerText = "⏳ Ukládám do databáze...";
-
-        // Odeslání do Firebase Realtime Database
-        db.ref('produkty').push({
-            jmeno: name,
-            cena: price,
-            img: imgUrl,
-            datum: new Date().toLocaleString()
-        })
-        .then(() => {
-            // Úspěch
-            statusDiv.style.backgroundColor = "#c8e6c9";
-            statusDiv.innerHTML = "<b>✅ ÚSPĚCH!</b> Produkt byl uložen. Podívej se na hlavní stránku.";
-            
-            // Vymazání políček
-            document.getElementById('name').value = "";
-            document.getElementById('price').value = "";
-            document.getElementById('imgUrl').value = "";
-            btn.disabled = false;
-        })
-        .catch((error) => {
-            // Chyba
-            statusDiv.style.backgroundColor = "#ffcccc";
-            statusDiv.innerHTML = "<b>❌ CHYBA:</b> " + error.message;
-            console.error("Firebase error:", error);
-            btn.disabled = false;
-        });
-    }
-</script>
-
-<style>
-    /* Rychlý styl pro admina, pokud by style.css nefungoval */
-    .admin-container { max-width: 500px; margin: 50px auto; font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-    .form-group input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-    button:hover { background-color: #218838; }
-    button:disabled { background-color: #ccc; cursor: not-allowed; }
-</style>
+    </script>
 
 </body>
 </html>
