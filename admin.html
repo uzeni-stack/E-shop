@@ -1,150 +1,63 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin - Výběr fotky</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="config.js"></script>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-        .admin-box { background: white; max-width: 600px; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; }
-        
-        .gallery-title { margin-top: 20px; color: #555; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
-        .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
-            gap: 15px; 
-            margin: 10px 0 20px 0; 
-            border: 2px solid #f0f0f0; 
-            padding: 15px; 
-            max-height: 400px; 
-            overflow-y: auto; 
-            background: #fafafa;
-            border-radius: 8px;
-        }
-        .gallery img { 
-            width: 100%; 
-            height: 100px; 
-            object-fit: cover; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            border: 4px solid transparent; 
-            transition: 0.2s;
-            background: white;
-        }
-        .gallery img:hover { border-color: #007bff; transform: scale(1.02); }
-        .gallery img.selected { border-color: #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.5); }
-
-        .btn { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 1.1em; font-weight: bold; }
-        .btn:hover { background: #218838; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        
-        #selected-text { background: #e9ecef; padding: 10px; border-radius: 5px; text-align: center; }
-    </style>
-</head>
-<body>
-
-<div class="admin-box">
-    <h1 style="text-align: center;">🛒 Správa svetrů</h1>
-    
-    <label>Název produktu:</label>
-    <input type="text" id="name" placeholder="Např. Modrý vlněný svetr">
-    
-    <label>Cena (Kč):</label>
-    <input type="number" id="price" placeholder="Např. 1290">
-    
-    <h3 class="gallery-title">1. Vyber fotku kliknutím:</h3>
-    <div class="gallery" id="gallery">
-        </div>
-
-    <p id="selected-text">Vybraná fotka: <b>žádná</b></p>
-    
-    <button class="btn" onclick="ulozSvetr()" id="saveBtn">🚀 Uložit a vystavit na web</button>
-    <p id="status" style="text-align:center; font-weight:bold; margin-top: 15px;"></p>
-    
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="index.html" style="color: #007bff; text-decoration: none;">← Přejít na e-shop</a>
+<hr style="margin: 40px 0;">
+<h2>Správa nahraných svetrů</h2>
+<div id="seznam-mazani">
     </div>
-</div>
+
+<style>
+    .delete-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+    .btn-delete {
+        background: #ff4d4d;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .btn-delete:hover { background: #cc0000; }
+</style>
 
 <script>
-    // Tady napiš názvy souborů, které jsi nahrál na GitHub
-    // Pokud nahraješ další, prostě je dopiš do seznamu
-    const mojeFotky = [
-        '01.png', 
-        '03.png'
-    ];
+    // TENTO KÓD PŘIDEJ DO SVÉHO <script> SEKCE
+    const seznamMazani = document.getElementById('seznam-mazani');
 
-    // CESTA: Pokud máš fotky v hlavním seznamu, nech jen "". 
-    // Pokud jsou ve složce fotky/fotky/, napiš to tam.
-    const slozka = "fotky/fotky/"; 
-    
-    let vybranaFotka = "";
+    // Načítání produktů pro smazání
+    db.ref('produkty').on('value', (snapshot) => {
+        const data = snapshot.val();
+        seznamMazani.innerHTML = "";
 
-    const galleryDiv = document.getElementById('gallery');
-    
-    // Načtení galerie
-    mojeFotky.forEach(foto => {
-        const img = document.createElement('img');
-        // Přidáme náhodné číslo za název, aby se obrázek pokaždé čerstvě načetl (prevence mezipaměti)
-        img.src = slozka + foto;
-        img.alt = foto;
-        
-        img.onclick = function() {
-            document.querySelectorAll('.gallery img').forEach(i => i.classList.remove('selected'));
-            img.classList.add('selected');
-            
-            vybranaFotka = slozka + foto;
-            document.getElementById('selected-text').innerHTML = "Vybraná fotka: <b style='color:#28a745'>" + foto + "</b>";
-        };
-        
-        // Pokud se obrázek nenačte, vypíše chybu do konzole
-        img.onerror = function() {
-            console.error("Nepodařilo se načíst obrázek: " + img.src);
-        };
-        
-        galleryDiv.appendChild(img);
+        if (data) {
+            Object.keys(data).forEach(id => {
+                const p = data[id];
+                seznamMazani.innerHTML += `
+                    <div class="delete-item">
+                        <div style="display:flex; align-items:center;">
+                            <img src="${Array.isArray(p.img) ? p.img[0] : p.img}" style="width:50px; height:50px; object-fit:cover; margin-right:15px; border-radius:4px;">
+                            <span><strong>${p.jmeno}</strong> - ${p.cena} Kč</span>
+                        </div>
+                        <button class="btn-delete" onclick="smazatProdukt('${id}')">Smazat</button>
+                    </div>
+                `;
+            });
+        } else {
+            seznamMazani.innerHTML = "<p>Žádné produkty k zobrazení.</p>";
+        }
     });
 
-    function ulozSvetr() {
-        const name = document.getElementById('name').value;
-        const price = document.getElementById('price').value;
-        const status = document.getElementById('status');
-        const btn = document.getElementById('saveBtn');
-
-        if (!name || !price || !vybranaFotka) {
-            alert("❌ Prosím vyplň název, cenu a vyber fotku!");
-            return;
+    // Funkce pro smazání
+    function smazatProdukt(id) {
+        if (confirm("Opravdu chceš tento svetr smazat z obchodu?")) {
+            db.ref('produkty/' + id).remove()
+                .then(() => alert("Smazáno!"))
+                .catch(err => alert("Chyba: " + err.message));
         }
-
-        btn.disabled = true;
-        status.style.color = "orange";
-        status.innerText = "⏳ Odesílám do databáze...";
-        
-        db.ref('produkty').push({
-            jmeno: name,
-            cena: price,
-            img: vybranaFotka
-        }).then(() => {
-            status.style.color = "green";
-            status.innerHTML = "✅ Svetr byl úspěšně vystaven!";
-            
-            // Resetování formuláře
-            document.getElementById('name').value = "";
-            document.getElementById('price').value = "";
-            document.querySelectorAll('.gallery img').forEach(i => i.classList.remove('selected'));
-            document.getElementById('selected-text').innerHTML = "Vybraná fotka: <b>žádná</b>";
-            vybranaFotka = "";
-            btn.disabled = false;
-        }).catch(err => {
-            status.style.color = "red";
-            status.innerText = "❌ Chyba při ukládání: " + err.message;
-            btn.disabled = false;
-        });
     }
 </script>
-
-</body>
-</html>
