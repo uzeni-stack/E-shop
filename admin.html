@@ -2,55 +2,45 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Super Master 16 Admin - E-shop</title>
+    <title>Admin - Výběr fotek</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="config.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        label { display: block; margin: 10px 0 5px; font-weight: bold; color: #555; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
-        .btn-add { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .product-item { background: #fff; border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 15px; }
-        .product-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
-        .btn-del { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .hint { font-size: 12px; color: #888; margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        
+        /* Styl pro výběr fotek */
+        #photoPicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; max-height: 400px; overflow-y: auto; background: #f9f9f9; padding: 15px; border: 2px dashed #ccc; border-radius: 8px; }
+        .folder-btn { background: #3498db; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80px; }
+        #photoPicker img { width: 100%; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid transparent; border-radius: 4px; }
+        #photoPicker img.selected { border-color: #2ecc71; transform: scale(1.02); }
+        
+        .product-item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 15px; }
+        .product-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="box">
-        <h2>🚀 Super Master Admin</h2>
+        <h2>🚀 Nový produkt</h2>
+        <input type="text" id="mainCat" placeholder="Kategorie (např. Boty)">
+        <input type="text" id="prodName" placeholder="Název produktu">
+        <input type="number" id="prodPrice" placeholder="Cena (Kč)">
+        <input type="text" id="prodPhotos" readonly placeholder="Cesta k fotce se vyplní kliknutím dole">
+
+        <div id="photoPicker">Načítám složky...</div>
         
-        <label>Kategorie / Podkategorie:</label>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="mainCat" placeholder="Boty">
-            <input type="text" id="subCat" placeholder="Letní">
-        </div>
-
-        <label>Název Produktu:</label>
-        <input type="text" id="prodName" placeholder="Nike Air">
-
-        <label>Cena (Kč):</label>
-        <input type="number" id="prodPrice" placeholder="2000">
-
-        <label>Popis:</label>
-        <textarea id="prodDesc" rows="3" placeholder="Popis..."></textarea>
-
-        <label>Cesta k fotce (napiš ji sem):</label>
-        <input type="text" id="prodPhotos" placeholder="fotky/Boty letní/bota1.jpg">
-        <div class="hint">Příklad: <b>fotky/Boty letní/nazev-fotky.jpg</b></div>
-        
-        <button class="btn-add" onclick="ulozProdukt()">✨ VYSTAVIT PRODUKT</button>
+        <button class="btn" style="margin-top:20px;" onclick="ulozProdukt()">ZVEŘEJNIT NA E-SHOP</button>
     </div>
 
     <div class="box">
-        <h2>📦 Aktuální Nabídka</h2>
-        <div id="manager-list">Načítám...</div>
+        <h2>📦 Co už prodáváš</h2>
+        <div id="manager-list">Načítám tvou nabídku...</div>
     </div>
 </div>
 
@@ -58,20 +48,56 @@
     const GITHUB_USER = 'uzeni-stack';
     const GITHUB_REPO = 'uzeni-stack.github.io';
 
-    // 1. ULOŽENÍ DO FIREBASE
+    // 1. NAČÍTÁNÍ FOTEK (Funguje, jen když je projekt PUBLIC)
+    async function nactiZGithubu(cesta = 'fotky') {
+        const picker = document.getElementById('photoPicker');
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${cesta}`);
+            const items = await res.json();
+            picker.innerHTML = "";
+
+            // Tlačítko Zpět
+            if (cesta !== 'fotky') {
+                const zpet = document.createElement('button');
+                zpet.className = "folder-btn"; zpet.innerHTML = "🔙 <span>Zpět</span>";
+                zpet.onclick = () => nactiZGithubu('fotky');
+                picker.appendChild(zpet);
+            }
+
+            items.forEach(item => {
+                if (item.type === 'dir') {
+                    const btn = document.createElement('button');
+                    btn.className = "folder-btn"; btn.innerHTML = "📁 <span>" + item.name + "</span>";
+                    btn.onclick = () => nactiZGithubu(item.path);
+                    picker.appendChild(btn);
+                } else if (item.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
+                    const img = document.createElement('img');
+                    img.src = item.download_url;
+                    img.onclick = () => {
+                        document.getElementById('prodPhotos').value = item.path;
+                        document.querySelectorAll('#photoPicker img').forEach(i => i.classList.remove('selected'));
+                        img.classList.add('selected');
+                    };
+                    picker.appendChild(img);
+                }
+            });
+        } catch (e) { 
+            picker.innerHTML = "Chyba: Zkontroluj, zda je projekt PUBLIC v Settings!"; 
+        }
+    }
+
+    // 2. ULOŽENÍ DO FIREBASE
     function ulozProdukt() {
         const name = document.getElementById('prodName').value;
         const price = document.getElementById('prodPrice').value;
         const photo = document.getElementById('prodPhotos').value;
 
-        if(!name || !price || !photo) return alert("Vyplň název, cenu a cestu k fotce!");
+        if(!name || !price || !photo) return alert("Chybí název, cena nebo fotka!");
 
         db.ref('produkty').push({
             kategorie: document.getElementById('mainCat').value || "Boty",
-            podkategorie: document.getElementById('subCat').value || "",
             jmeno: name,
             cena: price,
-            popis: document.getElementById('prodDesc').value,
             img: photo
         }).then(() => {
             alert("Vystaveno!");
@@ -81,7 +107,7 @@
         });
     }
 
-    // 2. SEZNAM PRODUKTŮ
+    // 3. SEZNAM PRODUKTŮ V ADMINU
     db.ref('produkty').on('value', snap => {
         const list = document.getElementById('manager-list');
         list.innerHTML = "";
@@ -89,23 +115,18 @@
         if(data) {
             Object.keys(data).forEach(id => {
                 const p = data[id];
-                // Obrázek se bere přímo z tvého webu, tam to funguje i bez API
-                const imgUrl = `https://${GITHUB_USER}.github.io/${p.img}`;
                 list.innerHTML += `
                     <div class="product-item">
-                        <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/60?text=Chyba'">
-                        <div style="flex:1;">
-                            <strong>${p.jmeno}</strong><br>
-                            <small>${p.cena} Kč</small>
-                        </div>
-                        <button class="btn-del" onclick="db.ref('produkty/${id}').remove()">🗑️</button>
+                        <img src="https://${GITHUB_USER}.github.io/${p.img}">
+                        <div style="flex:1;"><b>${p.jmeno}</b><br>${p.cena} Kč</div>
+                        <button style="color:red; cursor:pointer;" onclick="db.ref('produkty/${id}').remove()">🗑️</button>
                     </div>`;
             });
-        } else {
-            list.innerHTML = "Zatím tu nic není.";
         }
     });
-</script>
 
+    // Start
+    nactiZGithubu('fotky');
+</script>
 </body>
 </html>
