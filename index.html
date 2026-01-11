@@ -20,7 +20,7 @@
     <script>
         const productList = document.getElementById('product-list');
 
-        // Načítání dat z Firebase
+        // Načítání dat z Firebase v reálném čase
         db.ref('produkty').on('value', (snapshot) => {
             const data = snapshot.val();
             productList.innerHTML = ""; 
@@ -28,10 +28,13 @@
             if (data) {
                 Object.keys(data).forEach(key => {
                     const produkt = data[key];
-                    // Tady je ten trik: použijeme značku <img> pro zobrazení fotky
+                    
+                    // Kód pro vykreslení karty produktu
                     productList.innerHTML += `
                         <div class="product-card">
-                            <img src="${produkt.img}" alt="${produkt.jmeno}" style="width:100%; max-width:250px; border-radius:10px;">
+                            <div class="img-container">
+                                <img src="${produkt.img}" alt="${produkt.jmeno}">
+                            </div>
                             <h3>${produkt.jmeno}</h3>
                             <p class="price">${produkt.cena} Kč</p>
                             <button class="buy-btn">Koupit</button>
@@ -45,10 +48,62 @@
     </script>
 
     <style>
-        .shop-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; }
-        .product-card { border: 1px solid #eee; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 250px; }
-        .price { font-weight: bold; color: #2c3e50; font-size: 1.2em; }
-        .buy-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; }
+        /* Moderní vzhled e-shopu */
+        body { font-family: sans-serif; background-color: #f9f9f9; margin: 0; }
+        header { background: #333; color: white; text-align: center; padding: 20px 0; }
+        
+        .shop-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 25px; 
+            justify-content: center; 
+            padding: 40px; 
+        }
+
+        .product-card { 
+            background: white;
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+            width: 260px;
+            transition: transform 0.2s;
+        }
+
+        .product-card:hover { transform: translateY(-5px); }
+
+        /* Zarovnání fotek, aby byly všechny stejně velké */
+        .img-container {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #eee;
+        }
+
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ořízne fotku tak, aby vyplnila prostor a nedeformovala se */
+        }
+
+        h3 { font-size: 1.1em; color: #444; margin: 10px 0; }
+        .price { font-weight: bold; color: #e44d26; font-size: 1.3em; margin: 10px 0; }
+        
+        .buy-btn { 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: bold;
+            font-size: 1em;
+        }
+        .buy-btn:hover { background: #218838; }
     </style>
 </body>
 </html>
