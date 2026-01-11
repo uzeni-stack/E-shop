@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "TVOJE_API_KEY",
+  apiKey: "AIzaSyBUFpm-YlzJX_wd0hoe9kc0gXdteflLGBQ", // Tady byl ten problém
   authDomain: "e-shop-685c2.firebaseapp.com",
   databaseURL: "https://e-shop-685c2-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "e-shop-685c2",
