@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>e-shop | Správa produktů</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+</head>
+<body style="background:#f4f7f6;">
+    <header class="main-header">
+        <div class="logo">e-shop Admin</div>
+        <a href="index.html" style="color: white; text-decoration: none; background: #34495e; padding: 5px 15px; border-radius: 4px;">Zobrazit web</a>
+    </header>
+
+    <div class="content" style="max-width: 500px; margin: 40px auto;">
+        <h2 style="text-align: center; color: #2c3e50;">Přidat nový svetr</h2>
+        
+        <div id="admin-form" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <label>Název produktu:</label>
+            <input type="text" id="pName" placeholder="Např. Modrý vlněný rolák" style="width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 6px;">
+            
+            <label>Cena (Kč):</label>
+            <input type="number" id="pPrice" placeholder="990" style="width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 6px;">
+            
+            <label>Kategorie:</label>
+            <select id="pCategory" style="width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="rolaky">Roláky</option>
+                <option value="klasicke">Klasické svetry</option>
+                <option value="vesty">Vesty</option>
+            </select>
+
+            <label>Fotka produktu:</label>
+            <input type="file" id="pFile" accept="image/*" style="margin: 10px 0 25px 0;">
+
+            <button onclick="ulozProdukt()" id="btnSave" style="background: #27ae60; color: white; padding: 15px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: bold;">
+                🚀 Uložit produkt do e-shopu
+            </button>
+            <p id="status" style="text-align:center; color: #666; margin-top: 15px;"></p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        async function ulozProdukt() {
+            const nazev = document.getElementById('pName').value;
+            const cena = document.getElementById('pPrice').value;
+            const kat = document.getElementById('pCategory').value;
+            const file = document.getElementById('pFile').files[0];
+            const btn = document.getElementById('btnSave');
+            const status = document.getElementById('status');
+
+            if(!nazev || !cena || !file) {
+                alert('Prosím vyplňte název, cenu a vyberte fotku!');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Nahrávám...";
+            status.innerText = "Nahrávám fotku do úložiště...";
+
+            try {
+                // 1. Nahrání fotky do Storage
+                const storageRef = storage.ref('produkty/' + file.name);
+                await storageRef.put(file);
+                const imgUrl = await storageRef.getDownloadURL();
+
+                // 2. Uložení dat do Database
+                await db.ref('produkty').push({
+                    nazev: nazev,
+                    cena: cena,
+                    kategorie: kat,
+                    img: imgUrl
+                });
+
+                status.innerText = "✅ Hotovo! Produkt je na webu.";
+                document.getElementById('pName').value = "";
+                document.getElementById('pPrice').value = "";
+                document.getElementById('pFile').value = "";
+            } catch (error) {
+                console.error(error);
+                alert('Chyba při ukládání: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "🚀 Uložit produkt do e-shopu";
+            }
+        }
+    </script>
+</body>
+</html>
