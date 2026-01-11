@@ -2,64 +2,124 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Výběr fotek</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin aaa Panel - E-shop</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
     <script src="config.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn { background: #2ecc71; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
         
-        /* Styl pro výběr fotek */
-        #photoPicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; max-height: 400px; overflow-y: auto; background: #f9f9f9; padding: 15px; border: 2px dashed #ccc; border-radius: 8px; }
-        .folder-btn { background: #3498db; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80px; }
-        #photoPicker img { width: 100%; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid transparent; border-radius: 4px; }
-        #photoPicker img.selected { border-color: #2ecc71; transform: scale(1.02); }
+        label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         
-        .product-item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 15px; }
-        .product-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        /* Styl pro výběr fotek z GitHubu */
+        #photoPicker { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+            gap: 12px; 
+            margin-top: 10px; 
+            max-height: 350px; 
+            overflow-y: auto; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border: 2px dashed #cbd5e0; 
+            border-radius: 10px; 
+        }
+        .folder-btn { 
+            background: #1a73e8; color: white; border: none; padding: 10px; 
+            cursor: pointer; border-radius: 6px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; min-height: 80px; font-size: 11px;
+            transition: 0.2s;
+        }
+        .folder-btn:hover { background: #1557b0; }
+        #photoPicker img { 
+            width: 100%; height: 80px; object-fit: cover; cursor: pointer; 
+            border: 3px solid transparent; border-radius: 6px; transition: 0.2s; 
+        }
+        #photoPicker img:hover { transform: translateY(-3px); }
+        #photoPicker img.selected { border-color: #34a853; box-shadow: 0 0 10px rgba(52,168,83,0.3); }
+        
+        .btn-submit { 
+            background: #34a853; color: white; border: none; padding: 16px; 
+            width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; 
+            font-size: 16px; margin-top: 20px; transition: 0.3s;
+        }
+        .btn-submit:hover { background: #2d8e47; }
+
+        /* Seznam vpravo */
+        .product-item { 
+            background: #fff; border: 1px solid #edf2f7; padding: 12px; 
+            margin-bottom: 12px; border-radius: 10px; display: flex; 
+            align-items: center; gap: 15px; transition: 0.2s;
+        }
+        .product-item:hover { border-color: #cbd5e0; }
+        .product-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+        .btn-del { background: #ea4335; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="box">
-        <h2>🚀 Nový produkt</h2>
-        <input type="text" id="mainCat" placeholder="Kategorie (např. Boty)">
-        <input type="text" id="prodName" placeholder="Název produktu">
-        <input type="number" id="prodPrice" placeholder="Cena (Kč)">
-        <input type="text" id="prodPhotos" readonly placeholder="Cesta k fotce se vyplní kliknutím dole">
-
-        <div id="photoPicker">Načítám složky...</div>
+        <h2>✨ Nový produkt na e-shop</h2>
         
-        <button class="btn" style="margin-top:20px;" onclick="ulozProdukt()">ZVEŘEJNIT NA E-SHOP</button>
+        <label>Kategorie:</label>
+        <input type="text" id="mainCat" placeholder="Např. Boty letní">
+
+        <label>Název zboží:</label>
+        <input type="text" id="prodName" placeholder="Nike Air Max Retro">
+
+        <label>Cena (Kč):</label>
+        <input type="number" id="prodPrice" placeholder="2490">
+
+        <label>Popis:</label>
+        <textarea id="prodDesc" rows="2" placeholder="Stručný popis..."></textarea>
+
+        <label>Vybraná fotka (cesta):</label>
+        <input type="text" id="prodPhotos" readonly placeholder="Vyber kliknutím ve složce níže">
+
+        <div id="photoPicker">Načítám složky z GitHubu...</div>
+        
+        <button class="btn-submit" onclick="ulozProdukt()">ZVEŘEJNIT PRODUKT</button>
     </div>
 
     <div class="box">
-        <h2>📦 Co už prodáváš</h2>
-        <div id="manager-list">Načítám tvou nabídku...</div>
+        <h2>📦 Aktuálně vystaveno</h2>
+        <div id="manager-list">Načítám vaši nabídku...</div>
     </div>
 </div>
 
 <script>
+    // --- NASTAVENÍ ---
     const GITHUB_USER = 'uzeni-stack';
     const GITHUB_REPO = 'uzeni-stack.github.io';
 
-    // 1. NAČÍTÁNÍ FOTEK (Funguje, jen když je projekt PUBLIC)
+    // 1. FUNKCE: NAČTENÍ FOTEK (Míří přímo do složky 'fotky')
     async function nactiZGithubu(cesta = 'fotky') {
         const picker = document.getElementById('photoPicker');
         try {
             const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${cesta}`);
             const items = await res.json();
-            picker.innerHTML = "";
 
-            // Tlačítko Zpět
+            if (!Array.isArray(items)) {
+                picker.innerHTML = "<b style='color:red;'>Chyba: Složka nebyla nalezena. Ověřte, že je projekt PUBLIC.</b>";
+                return;
+            }
+
+            picker.innerHTML = "";
+            
+            // Tlačítko Zpět, pokud jsme hlouběji než v hlavní složce 'fotky'
             if (cesta !== 'fotky') {
                 const zpet = document.createElement('button');
-                zpet.className = "folder-btn"; zpet.innerHTML = "🔙 <span>Zpět</span>";
+                zpet.className = "folder-btn";
+                zpet.innerHTML = "🔙 <span>Zpět</span>";
                 zpet.onclick = () => nactiZGithubu('fotky');
                 picker.appendChild(zpet);
             }
@@ -67,7 +127,8 @@
             items.forEach(item => {
                 if (item.type === 'dir') {
                     const btn = document.createElement('button');
-                    btn.className = "folder-btn"; btn.innerHTML = "📁 <span>" + item.name + "</span>";
+                    btn.className = "folder-btn";
+                    btn.innerHTML = "📁 <span>" + item.name + "</span>";
                     btn.onclick = () => nactiZGithubu(item.path);
                     picker.appendChild(btn);
                 } else if (item.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
@@ -82,51 +143,62 @@
                 }
             });
         } catch (e) { 
-            picker.innerHTML = "Chyba: Zkontroluj, zda je projekt PUBLIC v Settings!"; 
+            picker.innerHTML = "Chyba připojení k GitHubu."; 
         }
     }
 
-    // 2. ULOŽENÍ DO FIREBASE
+    // 2. FUNKCE: ULOŽENÍ DO FIREBASE
     function ulozProdukt() {
         const name = document.getElementById('prodName').value;
         const price = document.getElementById('prodPrice').value;
         const photo = document.getElementById('prodPhotos').value;
 
-        if(!name || !price || !photo) return alert("Chybí název, cena nebo fotka!");
+        if(!name || !price || !photo) {
+            alert("Musíte vyplnit název, cenu a vybrat fotku!");
+            return;
+        }
 
         db.ref('produkty').push({
-            kategorie: document.getElementById('mainCat').value || "Boty",
+            kategorie: document.getElementById('mainCat').value || "Ostatní",
             jmeno: name,
             cena: price,
+            popis: document.getElementById('prodDesc').value,
             img: photo
         }).then(() => {
-            alert("Vystaveno!");
+            alert("Produkt byl úspěšně vystaven!");
             document.getElementById('prodName').value = "";
             document.getElementById('prodPrice').value = "";
             document.getElementById('prodPhotos').value = "";
-        });
+        }).catch(err => alert("Chyba: " + err.message));
     }
 
-    // 3. SEZNAM PRODUKTŮ V ADMINU
+    // 3. FUNKCE: ZOBRAZENÍ SEZNAMU (Sync s Firebase)
     db.ref('produkty').on('value', snap => {
         const list = document.getElementById('manager-list');
         list.innerHTML = "";
         const data = snap.val();
+        
         if(data) {
             Object.keys(data).forEach(id => {
                 const p = data[id];
                 list.innerHTML += `
                     <div class="product-item">
                         <img src="https://${GITHUB_USER}.github.io/${p.img}">
-                        <div style="flex:1;"><b>${p.jmeno}</b><br>${p.cena} Kč</div>
-                        <button style="color:red; cursor:pointer;" onclick="db.ref('produkty/${id}').remove()">🗑️</button>
+                        <div style="flex:1;">
+                            <strong>${p.jmeno}</strong><br>
+                            <small>${p.cena} Kč</small>
+                        </div>
+                        <button class="btn-del" onclick="if(confirm('Smazat tento produkt?')) db.ref('produkty/${id}').remove()">🗑️</button>
                     </div>`;
             });
+        } else {
+            list.innerHTML = "Zatím jste nevložili žádné zboží.";
         }
     });
 
-    // Start
+    // START
     nactiZGithubu('fotky');
 </script>
+
 </body>
 </html>
