@@ -3,82 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e-shop | Domů</title>
+    <title>Můj E-shop se svetry</title>
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="config.js"></script>
 </head>
 <body>
-
-    <header class="main-header">
-        <div class="logo">e-shop</div>
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Hledat svetr...">
-        </div>
-        <div class="user-menu">
-            <a href="admin.html" style="color: #bdc3c7; text-decoration: none; margin-right: 15px; font-size: 0.8rem;">Admin panel</a>
-            <div class="cart">🛒 Košík (0)</div>
-        </div>
+    <header>
+        <h1>Vlněné svetry</h1>
     </header>
 
-    <div class="main-container">
-        <nav class="sidebar">
-            <h3>Kategorie</h3>
-            <ul>
-                <li><strong>Svetry</strong>
-                    <ul class="sub-menu">
-                        <li onclick="filtruj('rolaky')">Roláky</li>
-                        <li onclick="filtruj('klasicke')">Klasické svetry</li>
-                        <li onclick="filtruj('vesty')">Vesty</li>
-                    </ul>
-                </li>
-                <li onclick="filtruj('vse')" style="margin-top:10px; font-weight:bold;">Zobrazit vše</li>
-            </ul>
-        </nav>
-
-        <main class="content">
-            <h2 id="nadpis-kategorie">Aktuální nabídka</h2>
-            <div id="product-grid" class="grid">
-                <p>Načítám zboží z databáze...</p>
-            </div>
+    <main id="product-list" class="shop-container">
         </main>
-    </div>
-
-    <script src="config.js"></script>
 
     <script>
-        // Logika pro zobrazení produktů
-        const grid = document.getElementById('product-grid');
+        const productList = document.getElementById('product-list');
 
+        // Načítání dat z Firebase
         db.ref('produkty').on('value', (snapshot) => {
-            grid.innerHTML = ""; 
             const data = snapshot.val();
-            
+            productList.innerHTML = ""; 
+
             if (data) {
-                for (let id in data) {
-                    const p = data[id];
-                    grid.innerHTML += `
-                        <div class="product-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
-                            <div style="width: 100%; height: 180px; background: #f9f9f9; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                                ${p.img ? `<img src="${p.img}" style="width:100%; height:100%; object-fit:cover;">` : '<span style="color:#ccc">Bez fota</span>'}
-                            </div>
-                            <h3 style="margin: 10px 0 5px 0; font-size: 1.1rem; color: #2c3e50;">${p.nazev}</h3>
-                            <p style="color: #27ae60; font-weight: bold; font-size: 1.2rem;">${p.cena} Kč</p>
-                            <button style="width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Do košíku</button>
+                Object.keys(data).forEach(key => {
+                    const produkt = data[key];
+                    // Tady je ten trik: použijeme značku <img> pro zobrazení fotky
+                    productList.innerHTML += `
+                        <div class="product-card">
+                            <img src="${produkt.img}" alt="${produkt.jmeno}" style="width:100%; max-width:250px; border-radius:10px;">
+                            <h3>${produkt.jmeno}</h3>
+                            <p class="price">${produkt.cena} Kč</p>
+                            <button class="buy-btn">Koupit</button>
                         </div>
                     `;
-                }
+                });
             } else {
-                grid.innerHTML = "<p>Zatím tu nic není. Přidej první kousek v Adminu!</p>";
+                productList.innerHTML = "<p>E-shop je zatím prázdný.</p>";
             }
         });
-
-        function filtruj(kat) {
-            console.log("Filtruji kategorii:", kat);
-            // Tady později přidáme filtraci
-        }
     </script>
+
+    <style>
+        .shop-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; }
+        .product-card { border: 1px solid #eee; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 250px; }
+        .price { font-weight: bold; color: #2c3e50; font-size: 1.2em; }
+        .buy-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; }
+    </style>
 </body>
 </html>
